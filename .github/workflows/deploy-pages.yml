@@ -1,0 +1,49 @@
+name: Publish IELTS Workbench
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          ZIP=deployment/ielts-workbench-cloudstudio.zip
+          if [ ! -f "$ZIP" ]; then ZIP=ielts-workbench-cloudstudio.zip; fi
+          unzip -q "$ZIP" -d _site
+          test -f _site/ielts-workbench/index.html
+
+      - name: Enable and configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site/ielts-workbench
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
